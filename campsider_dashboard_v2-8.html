@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frais de paiement — Campsider</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f5f3; color: #0b0b0b; min-height: 100vh; }
+
+  .header { padding: 1.5rem 2rem 1rem; border-bottom: 0.5px solid rgba(0,0,0,0.08); background: #fff; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .header-left h1 { font-size: 18px; font-weight: 500; }
+  .header-left p { font-size: 12px; color: #898781; margin-top: 2px; }
+  .status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #52514e; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #0ca30c; }
+  .status-dot.loading { background: #fab219; animation: pulse 1s ease-in-out infinite; }
+  .status-dot.error { background: #d03b3b; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .main { padding: 1.5rem 2rem; max-width: 1100px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .kpi { background: #fff; border-radius: 8px; border: 0.5px solid rgba(0,0,0,0.09); padding: 1rem 1.1rem; }
+  .kpi-label { font-size: 11px; color: #898781; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .kpi-value { font-size: 24px; font-weight: 500; color: #0b0b0b; letter-spacing: -.5px; }
+  .kpi-sub { font-size: 11px; color: #52514e; margin-top: 4px; }
+
+  .config-section { background: #fff; border: 0.5px solid rgba(0,0,0,0.09); border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+  .config-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: .85rem; }
+  .config-title { font-size: 13px; font-weight: 600; color: #0b0b0b; }
+  .config-subtitle { font-size: 12px; color: #898781; margin-top: 2px; }
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .config-card { background: #fafaf8; border: 0.5px solid rgba(0,0,0,0.08); border-radius: 8px; padding: 0.8rem; }
+  .config-card-title { font-size: 12px; font-weight: 600; color: #0b0b0b; margin-bottom: 0.5rem; }
+  .config-field { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; font-size: 11px; color: #52514e; }
+  .config-input { border: 0.5px solid rgba(0,0,0,0.12); border-radius: 6px; padding: 6px 8px; font-size: 12px; background: #fff; }
+  .config-reset { margin-top: 8px; border: none; background: transparent; padding: 0; color: #C94B1A; font-size: 11px; cursor: pointer; }
+
+  .section-label { font-size: 11px; font-weight: 500; color: #898781; text-transform: uppercase; letter-spacing: .07em; margin: 1.5rem 0 .75rem; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; border: 0.5px solid rgba(0,0,0,0.09); font-size: 13px; }
+  th { text-align: left; color: #898781; font-weight: 400; padding: 9px 14px; border-bottom: 0.5px solid rgba(0,0,0,0.08); background: #fafaf8; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  td { padding: 10px 14px; border-bottom: 0.5px solid rgba(0,0,0,0.06); color: #0b0b0b; }
+  tr:last-child td { border-bottom: none; }
+  tr.total-row td { font-weight: 500; background: #fafaf8; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500; margin-left: 5px; }
+  .badge-green { background: #EAF3DE; color: #3B6D11; }
+  .badge-red { background: #FCEBEB; color: #A32D2D; }
+  .badge-amber { background: #FAEEDA; color: #854F0B; }
+  .badge-free { background: #E1F5EE; color: #0F6E56; }
+  .bar-wrap { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+  .bar-track { height: 6px; background: #f1efe8; border-radius: 999px; overflow: hidden; width: 70px; display: inline-block; vertical-align: middle; border: 0.5px solid rgba(0,0,0,0.04); }
+  .bar-fill { height: 100%; border-radius: 999px; display: block; }
+
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+  .chart-card { background: #fff; border: 0.5px solid rgba(0,0,0,0.09); border-radius: 10px; padding: 1.1rem 1.25rem; }
+  .chart-title { font-size: 12px; font-weight: 500; color: #52514e; margin-bottom: .75rem; }
+  .chart-wrap { position: relative; width: 100%; height: 220px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; font-size: 11px; color: #52514e; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .refresh-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid rgba(0,0,0,0.08); font-size: 12px; color: #898781; }
+  .refresh-btn { padding: 5px 12px; border: 0.5px solid #c3c2b7; border-radius: 6px; background: #fff; font-size: 12px; color: #52514e; cursor: pointer; }
+  .refresh-btn:hover { background: #f5f5f3; }
+  .countdown { font-variant-numeric: tabular-nums; }
+
+  .error-box { background: #FCEBEB; border: 0.5px solid #f09595; border-radius: 8px; padding: 1rem 1.25rem; font-size: 13px; color: #A32D2D; margin-bottom: 1rem; }
+
+  @media (max-width: 640px) { .charts-grid { grid-template-columns: 1fr; } .main { padding: 1rem; } .header { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Frais de paiement — Campsider</h1>
+    <p id="last-update">Chargement des données...</p>
+  </div>
+  <div class="status">
+    <div class="status-dot loading" id="status-dot"></div>
+    <span id="status-text">Connexion au Sheets...</span>
+  </div>
+</div>
+
+<div class="main">
+  <div id="error-box" class="error-box" style="display:none"></div>
+
+  <section class="config-section">
+    <div class="config-header">
+      <div>
+        <div class="config-title">Configuration des taux de frais</div>
+        <div class="config-subtitle">Modifiez les taux et montants par mode de paiement. Les valeurs s'appliquent immédiatement au tableau et aux graphiques.</div>
+      </div>
+    </div>
+    <div class="config-grid" id="pricing-config"></div>
+  </section>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-label">GMV total</div><div class="kpi-value" id="kpi-gmv">—</div><div class="kpi-sub" id="kpi-nb">—</div></div>
+    <div class="kpi"><div class="kpi-label">Frais totaux</div><div class="kpi-value" id="kpi-fees">—</div><div class="kpi-sub" id="kpi-fees-sub">—</div></div>
+    <div class="kpi"><div class="kpi-label">Taux moyen pondéré</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub">du GMV total</div></div>
+    <div class="kpi"><div class="kpi-label">Panier moyen</div><div class="kpi-value" id="kpi-basket">—</div><div class="kpi-sub">toutes méthodes</div></div>
+  </div>
+
+  <p class="section-label">Détail par mode de paiement</p>
+  <table id="pm-table">
+    <thead>
+      <tr>
+        <th style="width:28%">Mode</th>
+        <th class="num" style="width:18%">GMV</th>
+        <th class="num" style="width:16%">Part GMV</th>
+        <th class="num" style="width:14%">Taux frais</th>
+        <th class="num" style="width:16%">Frais estimés</th>
+        <th class="num" style="width:8%">Frais/total</th>
+      </tr>
+    </thead>
+    <tbody id="pm-tbody"></tbody>
+  </table>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Taux de frais par mode</div>
+      <div class="legend" id="legend-rate"></div>
+      <div class="chart-wrap"><canvas id="feeChart" role="img" aria-label="Taux de frais par mode de paiement">Taux de frais par mode</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Part GMV vs part des frais</div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#2a78d6"></span>Part du GMV</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#e34948"></span>Part des frais</span>
+      </div>
+      <div class="chart-wrap"><canvas id="shareChart" role="img" aria-label="Part GMV vs part des frais par mode">Part GMV vs frais</canvas></div>
+    </div>
+  </div>
+
+  <div class="refresh-bar">
+    <span>Rafraîchissement automatique toutes les 10 min — prochain dans <span class="countdown" id="countdown">10:00</span></span>
+    <button class="refresh-btn" onclick="loadData()">↻ Rafraîchir maintenant</button>
+  </div>
+</div>
+
+<script>
+const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSClxeaJebDIcMTc9wJQbZAFeH88wndx-u_1G4VueNrejOFBaRq2WTF34Dq_BhUMg/pub?gid=695587173&single=true&output=csv';
+const REFRESH_MS = 10 * 60 * 1000;
+const FALLBACK_ROWS = [
+  { payment_method: 'MANGOPAY_CARD', total_price: '1200' },
+  { payment_method: 'MANGOPAY_CARD', total_price: '850' },
+  { payment_method: 'YOUNITED', total_price: '600' },
+  { payment_method: 'PAYPAL_ACCOUNT', total_price: '430' },
+  { payment_method: 'ALMA_X4', total_price: '780' },
+  { payment_method: 'ALMA_X10', total_price: '220' },
+  { payment_method: 'ALMA_X3', total_price: '310' }
+];
+
+const INITIAL_PRICING = {
+  MANGOPAY_CARD:  { pct: 0.014,  fixed: 0.15, mangopay: 0,     label: 'Mangopay CB',  color: '#2a78d6' },
+  YOUNITED:       { pct: 0,      fixed: 0,    mangopay: 0,     label: 'YOUNITED',     color: '#1baf7a' },
+  PAYPAL_ACCOUNT: { pct: 0.0195, fixed: 0.35, mangopay: 0.001, label: 'PayPal',       color: '#eda100' },
+  ALMA_X3:        { pct: 0.033,  fixed: 0,    mangopay: 0.005, label: 'Alma x3',      color: '#e34948' },
+  ALMA_X4:        { pct: 0.039,  fixed: 0,    mangopay: 0.005, label: 'Alma x4',      color: '#eb6834' },
+  ALMA_X10:       { pct: 0.034,  fixed: 0,    mangopay: 0.005, label: 'Alma x10',     color: '#4a3aa7' },
+};
+
+const PM_ORDER = ['MANGOPAY_CARD','YOUNITED','ALMA_X4','ALMA_X10','PAYPAL_ACCOUNT','ALMA_X3'];
+let PRICING = JSON.parse(JSON.stringify(INITIAL_PRICING));
+
+const fmtEur = v => v >= 1e6
+  ? (v/1e6).toFixed(2).replace('.',',') + ' M€'
+  : Math.round(v).toLocaleString('fr-FR') + ' €';
+const fmtPct = v => (v*100).toFixed(2).replace('.',',') + '%';
+
+let feeChart = null, shareChart = null;
+let countdownInterval = null;
+let nextRefresh = Date.now() + REFRESH_MS;
+let lastAgg = null;
+let lastTotals = null;
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+  return lines.slice(1).map(line => {
+    const vals = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/"/g,'').trim(); });
+    return obj;
+  });
+}
+
+function computeFee(pm, amount) {
+  const p = PRICING[pm];
+  if (!p) return 0;
+  return amount * (p.pct + p.mangopay) + p.fixed;
+}
+
+function getBadge(pm) {
+  if (pm === 'YOUNITED') return '<span class="badge badge-free">Gratuit</span>';
+  if (pm === 'MANGOPAY_CARD') return '<span class="badge badge-green">Optimal</span>';
+  if (pm === 'PAYPAL_ACCOUNT') return '<span class="badge badge-amber">Modéré</span>';
+  return '<span class="badge badge-red">Coûteux</span>';
+}
+
+function setStatus(state, text) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot' + (state === 'loading' ? ' loading' : state === 'error' ? ' error' : '');
+  document.getElementById('status-text').textContent = text;
+}
+
+function renderPricingConfig() {
+  const container = document.getElementById('pricing-config');
+  if (!container) return;
+  container.innerHTML = PM_ORDER.map(pm => {
+    const info = PRICING[pm] || INITIAL_PRICING[pm] || {};
+    return `
+      <div class="config-card">
+        <div class="config-card-title">${info.label || pm}</div>
+        <label class="config-field">
+          <span>Taux variable (% HT)</span>
+          <input class="config-input" type="number" step="0.01" value="${(info.pct * 100).toFixed(2)}" data-pm="${pm}" data-field="pct">
+        </label>
+        <label class="config-field">
+          <span>Montant fixe par transaction (€ HT)</span>
+          <input class="config-input" type="number" step="0.01" value="${Number(info.fixed).toFixed(2)}" data-pm="${pm}" data-field="fixed">
+        </label>
+        <button class="config-reset" type="button" data-pm="${pm}">Réinitialiser</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function recomputeAggregationFees(agg) {
+  const updated = {};
+  for (const pm in agg) {
+    const entry = agg[pm];
+    updated[pm] = { ...entry, fees: computeFee(pm, entry.gmv) };
+  }
+  return updated;
+}
+
+function refreshDashboardFromConfig() {
+  if (!lastAgg) return;
+  const refreshedAgg = recomputeAggregationFees(lastAgg);
+  let totalGmv = 0, totalFees = 0, totalNb = 0;
+  for (const pm in refreshedAgg) {
+    totalGmv += refreshedAgg[pm].gmv;
+    totalFees += refreshedAgg[pm].fees;
+    totalNb += refreshedAgg[pm].nb;
+  }
+  lastAgg = refreshedAgg;
+  lastTotals = { totalGmv, totalFees, totalNb };
+  renderDashboard(refreshedAgg, totalGmv, totalFees, totalNb);
+}
+
+function applyPricingUpdate(pm, field, value) {
+  const parsed = parseFloat(value);
+  if (Number.isNaN(parsed)) return;
+  if (!PRICING[pm]) PRICING[pm] = { ...INITIAL_PRICING[pm] };
+  if (field === 'pct') PRICING[pm].pct = parsed / 100;
+  if (field === 'fixed') PRICING[pm].fixed = parsed;
+  refreshDashboardFromConfig();
+}
+
+function resetPricing(pm) {
+  PRICING[pm] = { ...INITIAL_PRICING[pm] };
+  renderPricingConfig();
+  refreshDashboardFromConfig();
+}
+
+function renderDashboard(agg, totalGmv, totalFees, totalNb) {
+  document.getElementById('kpi-gmv').textContent = fmtEur(totalGmv);
+  document.getElementById('kpi-nb').textContent = totalNb.toLocaleString('fr-FR') + ' transactions';
+  document.getElementById('kpi-fees').textContent = fmtEur(totalFees);
+  document.getElementById('kpi-fees-sub').textContent = fmtPct(totalGmv > 0 ? totalFees/totalGmv : 0) + ' du GMV';
+  document.getElementById('kpi-rate').textContent = fmtPct(totalGmv > 0 ? totalFees/totalGmv : 0);
+  document.getElementById('kpi-basket').textContent = fmtEur(totalNb > 0 ? totalGmv/totalNb : 0);
+  document.getElementById('last-update').textContent = 'Mis à jour le ' + new Date().toLocaleString('fr-FR');
+
+  const tbody = document.getElementById('pm-tbody');
+  tbody.innerHTML = '';
+  const orderedPMs = PM_ORDER.filter(pm => agg[pm]);
+  for (const pm of orderedPMs) {
+    const a = agg[pm];
+    const feeRate = a.gmv > 0 ? a.fees/a.gmv : 0;
+    const shareGmv = totalGmv > 0 ? a.gmv/totalGmv : 0;
+    const shareOfFees = totalFees > 0 ? a.fees/totalFees : 0;
+    const info = PRICING[pm] || INITIAL_PRICING[pm] || {};
+    const pct = shareGmv * 100;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${info.label || pm}</strong>${getBadge(pm)}</td>
+      <td class="num">${fmtEur(a.gmv)}</td>
+      <td class="num"><span class="bar-wrap" style="color:${info.color||'#888'}"><span class="bar-track"><span class="bar-fill" style="width:${pct}%;background-color:${info.color||'#888'}"></span></span><span style="color:${info.color||'#888'}">${fmtPct(shareGmv)}</span></span></td>
+      <td class="num">${pm === 'YOUNITED' ? '<strong style="color:#0F6E56">0,00%</strong>' : fmtPct(feeRate)}</td>
+      <td class="num">${fmtEur(a.fees)}</td>
+      <td class="num">${totalFees > 0 ? fmtPct(shareOfFees) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  const trTotal = document.createElement('tr');
+  trTotal.className = 'total-row';
+  trTotal.innerHTML = `
+    <td>Total</td>
+    <td class="num">${fmtEur(totalGmv)}</td>
+    <td class="num">100,0%</td>
+    <td class="num">${fmtPct(totalGmv > 0 ? totalFees/totalGmv : 0)}</td>
+    <td class="num">${fmtEur(totalFees)}</td>
+    <td class="num">100,0%</td>
+  `;
+  tbody.appendChild(trTotal);
+
+  const labels = orderedPMs.map(pm => PRICING[pm]?.label || INITIAL_PRICING[pm]?.label || pm);
+  const colors = orderedPMs.map(pm => PRICING[pm]?.color || INITIAL_PRICING[pm]?.color || '#888');
+  const feeRates = orderedPMs.map(pm => parseFloat(((agg[pm].gmv > 0 ? agg[pm].fees/agg[pm].gmv : 0)*100).toFixed(2)));
+  const gmvShares = orderedPMs.map(pm => parseFloat((totalGmv > 0 ? agg[pm].gmv/totalGmv*100 : 0).toFixed(1)));
+  const feeShares = orderedPMs.map(pm => parseFloat((totalFees > 0 ? agg[pm].fees/totalFees*100 : 0).toFixed(1)));
+
+  document.getElementById('legend-rate').innerHTML = orderedPMs.map((pm,i) =>
+    `<span class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span>${labels[i]}</span>`
+  ).join('');
+
+  if (feeChart) { feeChart.data.labels = labels; feeChart.data.datasets[0].data = feeRates; feeChart.data.datasets[0].backgroundColor = colors; feeChart.update(); }
+  else {
+    feeChart = new Chart(document.getElementById('feeChart'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: feeRates, backgroundColor: colors, borderRadius: 4, barThickness: 28 }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.parsed.y.toFixed(2) + '%' } } },
+        scales: { x: { grid: { display: false }, ticks: { font: { size: 11 } } }, y: { ticks: { callback: v => v+'%', font: { size: 11 } }, min: 0, max: 5 } }
+      }
+    });
+  }
+
+  if (shareChart) { shareChart.data.labels = labels; shareChart.data.datasets[0].data = gmvShares; shareChart.data.datasets[1].data = feeShares; shareChart.update(); }
+  else {
+    shareChart = new Chart(document.getElementById('shareChart'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label: 'Part GMV', data: gmvShares, backgroundColor: '#2a78d6', borderRadius: 4 },
+        { label: 'Part frais', data: feeShares, backgroundColor: '#e34948', borderRadius: 4 }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.dataset.label+' : '+c.parsed.y.toFixed(1)+'%' } } },
+        scales: { x: { grid: { display: false }, ticks: { font: { size: 11 } } }, y: { ticks: { callback: v => v+'%', font: { size: 11 } } } }
+      }
+    });
+  }
+}
+
+function buildAggregation(rows) {
+  const agg = {};
+  for (const row of rows) {
+    const pm = row['payment_method'];
+    const price = parseFloat(row['total_price']) || 0;
+    if (!pm || !price) continue;
+    if (!agg[pm]) agg[pm] = { gmv: 0, nb: 0, fees: 0 };
+    agg[pm].gmv += price;
+    agg[pm].nb += 1;
+    agg[pm].fees += computeFee(pm, price);
+  }
+  return agg;
+}
+
+async function loadData() {
+  setStatus('loading', 'Chargement...');
+  document.getElementById('error-box').style.display = 'none';
+
+  try {
+    let rows = FALLBACK_ROWS;
+    try {
+      const res = await fetch(SHEETS_URL + '&t=' + Date.now(), { mode: 'cors' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      rows = parseCSV(text);
+    } catch (sheetError) {
+      console.warn('Sheets fetch failed, using fallback data:', sheetError);
+      document.getElementById('error-box').style.display = 'block';
+      document.getElementById('error-box').textContent = 'Données de secours utilisées : la connexion au CSV Google Sheets a échoué (' + sheetError.message + ').';
+    }
+
+    const agg = buildAggregation(rows);
+    let totalGmv = 0, totalFees = 0, totalNb = 0;
+    for (const pm in agg) { totalGmv += agg[pm].gmv; totalFees += agg[pm].fees; totalNb += agg[pm].nb; }
+
+    lastAgg = agg;
+    lastTotals = { totalGmv, totalFees, totalNb };
+    renderDashboard(agg, totalGmv, totalFees, totalNb);
+
+    setStatus('ok', 'Connecté au Sheets');
+    nextRefresh = Date.now() + REFRESH_MS;
+
+  } catch(e) {
+    setStatus('error', 'Erreur de chargement');
+    document.getElementById('error-box').style.display = 'block';
+    document.getElementById('error-box').textContent = 'Impossible d’afficher les données. Détail : ' + e.message;
+  }
+}
+
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    const remaining = Math.max(0, nextRefresh - Date.now());
+    const m = Math.floor(remaining / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    document.getElementById('countdown').textContent = m + ':' + String(s).padStart(2,'0');
+    if (remaining === 0) loadData();
+  }, 1000);
+}
+
+renderPricingConfig();
+document.getElementById('pricing-config').addEventListener('input', (event) => {
+  const input = event.target.closest('input[data-pm]');
+  if (!input) return;
+  applyPricingUpdate(input.dataset.pm, input.dataset.field, input.value);
+});
+document.getElementById('pricing-config').addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-pm]');
+  if (!button) return;
+  resetPricing(button.dataset.pm);
+});
+
+loadData();
+startCountdown();
+setInterval(loadData, REFRESH_MS);
+</script>
+</body>
+</html>
