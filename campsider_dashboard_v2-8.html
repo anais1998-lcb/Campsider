@@ -231,10 +231,10 @@ function parseAmount(value) {
   return parseFloat(cleaned) || 0;
 }
 
-function computeFee(pm, amount) {
+function computeFee(pm, amount, count = 1) {
   const p = PRICING[pm];
   if (!p) return 0;
-  return amount * (p.pct + p.mangopay) + p.fixed;
+  return amount * (p.pct + p.mangopay) + p.fixed * count;
 }
 
 function getBadge(pm) {
@@ -305,7 +305,7 @@ function recomputeAggregationFees(agg) {
   const updated = {};
   for (const pm in agg) {
     const entry = agg[pm];
-    updated[pm] = { ...entry, fees: computeFee(pm, entry.gmv) };
+    updated[pm] = { ...entry, fees: computeFee(pm, entry.gmv, entry.nb) };
   }
   return updated;
 }
@@ -448,33 +448,59 @@ function renderWeeklyChart(rows) {
   }
 }
 
-function renderDashboard(agg, totalGmv, totalFees, totalNb) {
-  document.getElementById('kpi-gmv').textContent = fmtEur(totalGmv);
-  document.getElementById('kpi-nb').textContent = totalNb.toLocaleString('fr-FR') + ' transactions';
-  document.getElementById('kpi-fees').textContent = fmtEur(totalFees);
-  document.getElementById('kpi-fees-sub').textContent = fmtPct(totalGmv > 0 ? totalFees/totalGmv : 0) + ' du GMV';
-  document.getElementById('kpi-rate').textContent = fmtPct(totalGmv > 0 ? totalFees/totalGmv : 0);
-  document.getElementById('kpi-basket').textContent = fmtEur(totalNb > 0 ? totalGmv/totalNb : 0);
-  document.getElementById('last-update').textContent = 'Mis à jour le ' + new Date().toLocaleString('fr-FR');
+function getConfiguredGmvShareRatios(orderedPMs = PM_ORDER) {
+  const raw = orderedPMs.map(pm => {
+    const info = PRICING[pm] || INITIAL_PRICING[pm] || {};
+    return typeof info.gmvShare === 'number' && info.gmvShare >= 0 ? info.gmvShare : 0;
+  });
+  const total = raw.reduce((sum, value) => sum + value, 0);
+  if (total <= 0) return raw.map(() => 0);
+  return raw.map(value => value / total);
+}
 
+function renderDashboard(agg, totalGmv, totalFees, totalNb) {
   const tbody = document.getElementById('pm-tbody');
   tbody.innerHTML = '';
   const orderedPMs = PM_ORDER.filter(pm => agg[pm]);
+  const configuredShareRatios = getConfiguredGmvShareRatios(orderedPMs);
+  const effectiveFeesByPm = {};
+  const simulatedGmvs = {};
+  let effectiveTotalFees = 0;
+  for (const pm of orderedPMs) {
+    const index = orderedPMs.indexOf(pm);
+    const shareRatio = configuredShareRatios[index] || 0;
+    const simulatedGmv = totalGmv * shareRatio;
+    simulatedGmvs[pm] = simulatedGmv;
+    const currentFee = computeFee(pm, simulatedGmv, agg[pm].nb);
+    effectiveFeesByPm[pm] = currentFee;
+    effectiveTotalFees += currentFee;
+  }
+
+  document.getElementById('kpi-gmv').textContent = fmtEur(totalGmv);
+  document.getElementById('kpi-nb').textContent = totalNb.toLocaleString('fr-FR') + ' transactions';
+  document.getElementById('kpi-fees').textContent = fmtEur(effectiveTotalFees);
+  document.getElementById('kpi-fees-sub').textContent = fmtPct(totalGmv > 0 ? effectiveTotalFees/totalGmv : 0) + ' du GMV';
+  document.getElementById('kpi-rate').textContent = fmtPct(totalGmv > 0 ? effectiveTotalFees/totalGmv : 0);
+  document.getElementById('kpi-basket').textContent = fmtEur(totalNb > 0 ? totalGmv/totalNb : 0);
+  document.getElementById('last-update').textContent = 'Mis à jour le ' + new Date().toLocaleString('fr-FR');
+
   for (const pm of orderedPMs) {
     const a = agg[pm];
-    const feeRate = a.gmv > 0 ? a.fees/a.gmv : 0;
-    const shareGmv = totalGmv > 0 ? a.gmv/totalGmv : 0;
-    const shareOfFees = totalFees > 0 ? a.fees/totalFees : 0;
+    const simulatedGmv = simulatedGmvs[pm] || 0;
+    const feeRate = simulatedGmv > 0 ? effectiveFeesByPm[pm]/simulatedGmv : 0;
+    const index = orderedPMs.indexOf(pm);
+    const shareGmv = configuredShareRatios[index] || 0;
+    const shareOfFees = effectiveTotalFees > 0 ? effectiveFeesByPm[pm]/effectiveTotalFees : 0;
     const info = PRICING[pm] || INITIAL_PRICING[pm] || {};
     const pct = shareGmv * 100;
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${info.label || pm}</strong>${getBadge(pm)}</td>
-      <td class="num">${fmtEur(a.gmv)}</td>
+      <td class="num">${fmtEur(simulatedGmv)}</td>
       <td class="num"><span class="bar-wrap" style="color:${info.color||'#888'}"><span class="bar-track"><span class="bar-fill" style="width:${pct}%;background-color:${info.color||'#888'}"></span></span><span style="color:${info.color||'#888'}">${fmtPct(shareGmv)}</span></span></td>
       <td class="num">${pm === 'YOUNITED' ? '<strong style="color:#0F6E56">0,00%</strong>' : fmtPct(feeRate)}</td>
-      <td class="num">${fmtEur(a.fees)}</td>
-      <td class="num">${totalFees > 0 ? fmtPct(shareOfFees) : '—'}</td>
+      <td class="num">${fmtEur(effectiveFeesByPm[pm])}</td>
+      <td class="num">${effectiveTotalFees > 0 ? fmtPct(shareOfFees) : '—'}</td>
     `;
     tbody.appendChild(tr);
   }
@@ -484,17 +510,17 @@ function renderDashboard(agg, totalGmv, totalFees, totalNb) {
     <td>Total</td>
     <td class="num">${fmtEur(totalGmv)}</td>
     <td class="num">100,0%</td>
-    <td class="num">${fmtPct(totalGmv > 0 ? totalFees/totalGmv : 0)}</td>
-    <td class="num">${fmtEur(totalFees)}</td>
+    <td class="num">${fmtPct(totalGmv > 0 ? effectiveTotalFees/totalGmv : 0)}</td>
+    <td class="num">${fmtEur(effectiveTotalFees)}</td>
     <td class="num">100,0%</td>
   `;
   tbody.appendChild(trTotal);
 
   const labels = orderedPMs.map(pm => PRICING[pm]?.label || INITIAL_PRICING[pm]?.label || pm);
   const colors = orderedPMs.map(pm => PRICING[pm]?.color || INITIAL_PRICING[pm]?.color || '#888');
-  const feeRates = orderedPMs.map(pm => parseFloat(((agg[pm].gmv > 0 ? agg[pm].fees/agg[pm].gmv : 0)*100).toFixed(2)));
-  const gmvShares = orderedPMs.map(pm => parseFloat((totalGmv > 0 ? agg[pm].gmv/totalGmv*100 : 0).toFixed(1)));
-  const feeShares = orderedPMs.map(pm => parseFloat((totalFees > 0 ? agg[pm].fees/totalFees*100 : 0).toFixed(1)));
+  const feeRates = orderedPMs.map(pm => parseFloat(((simulatedGmvs[pm] > 0 ? effectiveFeesByPm[pm]/simulatedGmvs[pm] : 0)*100).toFixed(2)));
+  const gmvShares = configuredShareRatios.map(share => parseFloat((share * 100).toFixed(1)));
+  const feeShares = orderedPMs.map(pm => parseFloat((effectiveTotalFees > 0 ? effectiveFeesByPm[pm]/effectiveTotalFees*100 : 0).toFixed(1)));
 
   document.getElementById('legend-rate').innerHTML = orderedPMs.map((pm,i) =>
     `<span class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span>${labels[i]}</span>`
