@@ -1,0 +1,339 @@
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-sans); background: transparent; color: var(--text-primary);
+    padding: 1rem 2rem;
+  }
+
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem; border-bottom: 0.5px solid var(--border);
+  }
+  .nav-logo { font-size: 18px; font-weight: 500; color: #C94B1A; letter-spacing: -0.5px; }
+  .nav-badge {
+    font-size: 11px; font-weight: 500; background: #fff3ef; color: #C94B1A;
+    border: 0.5px solid #f0c4b5; border-radius: 100px; padding: 3px 10px; margin-left: 10px;
+  }
+  .nav-cta {
+    background: #C94B1A; color: #fff; border: none;
+    padding: 8px 20px; border-radius: var(--radius);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+
+  .hero {
+    padding: 4rem 2rem 3rem; max-width: 900px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start;
+  }
+  .hero-eyebrow {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #C94B1A; margin-bottom: 1rem;
+  }
+  .hero-title {
+    font-size: 34px; font-weight: 500; line-height: 1.15;
+    letter-spacing: -0.5px; margin-bottom: 1.25rem; color: var(--text-primary);
+  }
+  .hero-sub {
+    font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 2rem;
+  }
+  .hero-cta {
+    background: #C94B1A; color: #fff; border: none;
+    padding: 14px 28px; border-radius: var(--radius);
+    font-size: 15px; font-weight: 500; cursor: pointer; display: inline-block;
+  }
+  .hero-proof {
+    margin-top: 1.25rem; font-size: 13px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-proof-image {
+    margin-top: 1rem; width: 100%; max-width: 100%; height: auto;
+    border-radius: 14px; border: 0.5px solid var(--border);
+    display: block;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #C94B1A; display: inline-block; flex-shrink: 0; }
+
+  .profiles { display: flex; flex-direction: column; gap: 10px; }
+  .hero-image {
+    width: 100%; height: 100%; min-height: 320px; object-fit: cover;
+    border-radius: 16px; border: 0.5px solid var(--border);
+    display: block;
+  }
+  .profile-card {
+    background: var(--surface-1); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem;
+    display: flex; align-items: flex-start; gap: 12px;
+    position: relative; overflow: hidden;
+  }
+  .profile-card::before {
+    content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
+    background: #C94B1A;
+  }
+  .profile-icon { font-size: 20px; color: #C94B1A; margin-top: 1px; flex-shrink: 0; }
+  .profile-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; color: var(--text-primary); }
+  .profile-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+  .value-section {
+    padding: 3rem 2rem; border-top: 0.5px solid var(--border);
+    max-width: 900px; margin: 0 auto;
+  }
+  .section-label {
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 1.5rem;
+  }
+  .value-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .value-card {
+    background: var(--surface-1); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 1.25rem;
+  }
+  .value-icon { font-size: 20px; color: #C94B1A; margin-bottom: 0.75rem; }
+  .value-title { font-size: 14px; font-weight: 500; margin-bottom: 0.4rem; color: var(--text-primary); }
+  .value-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+  .how-section {
+    padding: 3rem 2rem; border-top: 0.5px solid var(--border);
+    max-width: 900px; margin: 0 auto;
+  }
+  .how-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  .how-step { display: flex; flex-direction: column; gap: 8px; }
+  .how-num {
+    font-size: 11px; font-weight: 500; color: #C94B1A;
+    border: 0.5px solid #f0c4b5; background: #fff3ef;
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .how-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .how-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+  .trust-section {
+    padding: 2rem 2rem; border-top: 0.5px solid var(--border);
+    max-width: 900px; margin: 0 auto;
+  }
+  .trust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  .trust-num { font-size: 22px; font-weight: 500; color: var(--text-primary); }
+  .trust-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  .form-section {
+    padding: 3rem 2rem; border-top: 0.5px solid var(--border);
+    background: var(--surface-1);
+  }
+  .form-inner { max-width: 1000px; margin: 0 auto;}
+  .form-title { font-size: 22px; font-weight: 500; margin-bottom: 0.5rem; }
+  .form-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .form-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+  .form-input {
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    padding: 9px 12px; font-size: 14px; background: var(--surface-2);
+    color: var(--text-primary); width: 100%;
+  }
+  .form-input::placeholder { color: var(--text-muted); }
+  .form-divider {
+    font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); padding: 4px 0 8px; border-top: 0.5px solid var(--border);
+    margin: 8px 0 4px;
+  }
+  .form-submit {
+    width: 100%; background: #C94B1A; color: #fff; border: none;
+    padding: 13px; border-radius: var(--radius);
+    font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 4px;
+  }
+  .form-mention { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+
+  .footer {
+    padding: 1.25rem 2rem; border-top: 0.5px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-logo { font-size: 15px; font-weight: 500; color: #C94B1A; }
+  .footer-copy { font-size: 12px; color: var(--text-muted); }
+</style>
+
+<nav class="nav">
+  <div style="display:flex;align-items:center;">
+    <span class="nav-logo">Campsider</span>
+    <span class="nav-badge">Espace professionnels</span>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('reprise-form').scrollIntoView({behavior:'smooth'})">Déposer un dossier</button>
+</nav>
+
+<section class="hero">
+  <div>
+    <p class="hero-eyebrow">Reprise vélo de route — Professionnels</p>
+    <h1 class="hero-title">Vendez vos vélos de route d'occasion sur la plateforme des experts.</h1>
+    <p class="hero-sub">Un vélo à céder, ou toute une série ? Soumettez votre demande en ligne et notre équipe vous contacte sous 48h pour vous donner une estimation de prix et organiser la mise en vente.</p>
+    <button class="hero-cta" onclick="document.getElementById('reprise-form').scrollIntoView({behavior:'smooth'})">Soumettre une demande de reprise</button>
+    <div class="hero-proof">
+      <span class="dot"></span>
+      Réservé aux professionnels — réponse sous 48h ouvrées — sans engagement
+    </div>
+    <img class="hero-proof-image" src="https://tse2.mm.bing.net/th/id/OIP.nH6tn8oKIems-4SzLvbumAHaE8?r=0&pid=Api" alt="Vélo de route en mouvement">
+  </div>
+
+  <div class="profiles">
+    <img class="hero-image" src="https://images2.giant-bicycles.com/b_white%2Cc_pad%2Ch_1000%2Cq_80%2Cw_1920/wiklmu3nn0v3r5lzesjd/comment-choisir-son-velo-route-femme.jpg" alt="Vélo de route féminin sur la route">
+    <div class="profile-card">
+      <i class="ti ti-building-store profile-icon" aria-hidden="true"></i>
+      <div>
+        <p class="profile-name">Magasins et revendeurs</p>
+        <p class="profile-desc">Un vélo de démo, un retour client ou plusieurs unités à écouler — on s'adapte à votre volume.</p>
+      </div>
+    </div>
+    <div class="profile-card">
+      <i class="ti ti-bike profile-icon" aria-hidden="true"></i>
+      <div>
+        <p class="profile-name">Loueurs et flottes</p>
+        <p class="profile-desc">Cédez un ou plusieurs vélos en fin de saison pour renouveler votre parc sereinement.</p>
+      </div>
+    </div>
+    <div class="profile-card">
+      <i class="ti ti-trophy profile-icon" aria-hidden="true"></i>
+      <div>
+        <p class="profile-name">Clubs et associations</p>
+        <p class="profile-desc">Donnez une seconde vie à vos vélos de compétition ou d'entraînement auprès d'acheteurs passionnés.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="value-section">
+  <p class="section-label">Pourquoi Campsider</p>
+  <div class="value-grid">
+    <div class="value-card">
+      <i class="ti ti-users value-icon" aria-hidden="true"></i>
+      <p class="value-title">Une audience qualifiée</p>
+      <p class="value-desc">+100 000 acheteurs actifs sur Campsider, à la recherche de vélos de route d'occasion premium.</p>
+    </div>
+    <div class="value-card">
+      <i class="ti ti-shield-check value-icon" aria-hidden="true"></i>
+      <p class="value-title">Vente sécurisée</p>
+      <p class="value-desc">Paiement garanti, transaction vérifiée, support dédié. Vous vendez, on sécurise.</p>
+    </div>
+    <div class="value-card">
+      <i class="ti ti-chart-line value-icon" aria-hidden="true"></i>
+      <p class="value-title">Prix de marché optimisé</p>
+      <p class="value-desc">Nos experts fixent le prix juste selon la cote du marché pour maximiser vos revenus.</p>
+    </div>
+  </div>
+</section>
+
+<section class="how-section">
+  <p class="section-label">Le processus</p>
+  <div class="how-grid">
+    <div class="how-step">
+      <div class="how-num">1</div>
+      <p class="how-title">Soumettez votre dossier</p>
+      <p class="how-desc">Décrivez votre ou vos vélos via le formulaire. Quelques minutes suffisent.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-num">2</div>
+      <p class="how-title">Estimation sous 48h</p>
+      <p class="how-desc">Notre équipe vous contacte avec une fourchette de prix et les conditions de mise en vente.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-num">3</div>
+      <p class="how-title">Mise en vente</p>
+      <p class="how-desc">On prend en charge l'annonce, les photos et les échanges avec les acheteurs.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-num">4</div>
+      <p class="how-title">Paiement à la vente</p>
+      <p class="how-desc">Vous recevez le montant convenu dès la transaction confirmée, déduction faite de la commission.</p>
+    </div>
+  </div>
+</section>
+
+<section class="trust-section">
+  <p class="section-label">Campsider en chiffres</p>
+  <div class="trust-grid">
+    <div>
+      <p class="trust-num">+20 000</p>
+      <p class="trust-label">vélos vendus</p>
+    </div>
+    <div>
+      <p class="trust-num">4.7 / 5</p>
+      <p class="trust-label">sur Trustpilot</p>
+    </div>
+    <div>
+      <p class="trust-num">48h</p>
+      <p class="trust-label">délai de réponse</p>
+    </div>
+    <div>
+      <p class="trust-num">100%</p>
+      <p class="trust-label">paiement sécurisé</p>
+    </div>
+  </div>
+</section>
+
+<section class="form-section" id="reprise-form">
+  <div class="form-inner">
+    <h2 class="form-title">Déposez votre dossier de reprise</h2>
+    <p class="form-subtitle">
+      Notre équipe prend contact sous 48h ouvrées pour vous faire une proposition de mise en vente.
+    </p>
+
+    <iframe
+      data-tally-src="https://tally.so/embed/Pdg06Q?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+      loading="lazy"
+      width="100%"
+      height="2125"
+      frameborder="0"
+      marginheight="0"
+      marginwidth="0"
+      title="Demande de reprise — Vélos de route">
+    </iframe>
+  </div>
+</section>
+
+<script>
+var d=document,
+    w="https://tally.so/widgets/embed.js",
+    v=function(){
+      if(typeof Tally!=="undefined"){
+        Tally.loadEmbeds();
+      }else{
+        d.querySelectorAll("iframe[data-tally-src]:not([src])")
+         .forEach(function(e){e.src=e.dataset.tallySrc});
+      }
+    };
+
+if(typeof Tally!=="undefined"){
+  v();
+}else if(d.querySelector('script[src="'+w+'"]')==null){
+  var s=d.createElement("script");
+  s.src=w;
+  s.onload=v;
+  s.onerror=v;
+  d.body.appendChild(s);
+}
+</script>
+
+<script>
+var d=document,
+    w="https://tally.so/widgets/embed.js",
+    v=function(){
+      if(typeof Tally!=="undefined"){
+        Tally.loadEmbeds();
+      }else{
+        d.querySelectorAll("iframe[data-tally-src]:not([src])")
+         .forEach(function(e){e.src=e.dataset.tallySrc});
+      }
+    };
+
+if(typeof Tally!=="undefined"){
+  v();
+}else if(d.querySelector('script[src="'+w+'"]')==null){
+  var s=d.createElement("script");
+  s.src=w;
+  s.onload=v;
+  s.onerror=v;
+  d.body.appendChild(s);
+}
+</script>
+    <p class="form-mention">Réservé aux professionnels — réponse sous 48h ouvrées — sans engagement</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <span class="footer-logo">Campsider</span>
+  <span class="footer-copy">© 2026 Campsider — La marketplace des éco-aventuriers</span>
+</footer>
