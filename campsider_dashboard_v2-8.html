@@ -265,6 +265,16 @@ function getNormalizedGmvShares() {
   return shares.map(share => share / total);
 }
 
+function renderPricingSummary() {
+  const container = document.getElementById('pricing-config');
+  if (!container) return;
+  const liveTotal = PM_ORDER.reduce((sum, pm) => sum + (((PRICING[pm] || INITIAL_PRICING[pm] || {}).gmvShare || 0)), 0);
+  const summary = container.querySelector('.config-summary');
+  if (summary) {
+    summary.innerHTML = `<strong>Total des parts GMV :</strong> ${(liveTotal * 100).toFixed(2)}%`;
+  }
+}
+
 function renderPricingConfig() {
   const container = document.getElementById('pricing-config');
   if (!container) return;
@@ -292,13 +302,13 @@ function renderPricingConfig() {
       </div>
     `;
   }).join('');
-  const liveTotal = PM_ORDER.reduce((sum, pm) => sum + (((PRICING[pm] || INITIAL_PRICING[pm] || {}).gmvShare || 0)), 0);
   container.innerHTML = `
     <div class="config-summary">
-      <strong>Total des parts GMV :</strong> ${(liveTotal * 100).toFixed(2)}%
+      <strong>Total des parts GMV :</strong> 0.00%
     </div>
     ${cards}
   `;
+  renderPricingSummary();
 }
 
 function recomputeAggregationFees(agg) {
@@ -321,7 +331,7 @@ function refreshDashboardFromConfig() {
   }
   lastAgg = refreshedAgg;
   lastTotals = { totalGmv, totalFees, totalNb };
-  renderPricingConfig();
+  renderPricingSummary();
   renderDashboard(refreshedAgg, totalGmv, totalFees, totalNb);
 }
 
@@ -622,6 +632,13 @@ document.getElementById('pricing-config').addEventListener('input', (event) => {
   const input = event.target.closest('input[data-pm]');
   if (!input) return;
   applyPricingUpdate(input.dataset.pm, input.dataset.field, input.value);
+});
+document.getElementById('pricing-config').addEventListener('keydown', (event) => {
+  const input = event.target.closest('input[data-pm]');
+  if (!input) return;
+  if (event.key === 'Enter') {
+    applyPricingUpdate(input.dataset.pm, input.dataset.field, input.value);
+  }
 });
 document.getElementById('pricing-config').addEventListener('click', (event) => {
   const button = event.target.closest('button[data-pm]');
